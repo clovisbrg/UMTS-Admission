@@ -3,11 +3,16 @@ const BITRATES_ALLOCATIONS = [2, 4, 8, 16, 32, 64, 128, 256];
 class Node {
     constructor(code) {
         this.code = code;
+        this.rate = null;
         this.isAllocated = null;
         this.isAncestorsFree = new Boolean(true);
         this.treeLevel = null;
         this.left = null;
         this.right = null;
+    }
+
+    getBits() { // Convert the string "0101" into an array as [0, 1, 0, 1]
+        bits = this.code.split("");
     }
 
     length() {
@@ -17,19 +22,19 @@ class Node {
     dot(rhs) {
         // Does the scalar product "."
         if (this.length() !== rhs.length()) {
-            throw new Error("Les deux codes n'ont pas la même longueur.");
+            throw new Error("Both codes doesn't have the same length.");
         }
 
         let sum = 0;
         for (let i = 0; i < this.length(); i++) {
-            sum += this.bits[i] * rhs.bits[i];
+            sum += this.getBits[i] * rhs.getBits[i];
         }
         return sum;
     }
 
     isOrthogonal(rhs) {
         if (this.length() !== rhs.length()) {
-            throw new Error("Les deux codes n'ont pas la même longueur.");
+            throw new Error("Both codes doesn't have the same length.");
         }
 
         if (this.dot(rhs) !== 0) {
@@ -80,6 +85,16 @@ class BinaryTree {
         }
     }
 
+    findNode(node, rate) {
+        if (node == null || node.isAllocated) {
+            return null;
+        } else if (node.code == rate) {
+            return node;
+        } else {
+            return this.findNode(node.left, rate) || this.findNode(node.right, rate);
+        }
+    }
+
     findOSVFbycode(code) {
         if (node !== null) {
             if (node.code === code) {
@@ -100,6 +115,32 @@ class BinaryTree {
                 this.findFreeOVSF(node.right);
             }
         }
+    }
+
+    free(code) {
+        // Parcourir l'arbre pour trouver le noeud avec le code correspondant
+        let node = this.findNodeByCode(this.root, code);
+        if (node) {
+            node.isAllocated = false;
+        }
+    }
+
+    findNodeByCode(node, code) {
+        if (node == null) {
+            return null;
+        } else if (node.code == code) {
+            return node;
+        } else {
+            return this.findNodeByCode(node.left, code) || this.findNodeByCode(node.right, code);
+        }
+    }
+    
+    codeCount(node = this.root) {
+        if (node === null) {
+            return 0;
+        }
+        
+        return 1 + this.codeCount(node.left) + this.codeCount(node.right);
     }
     
     calcShortestFreeCode(requestLen) {
