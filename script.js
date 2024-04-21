@@ -1,56 +1,67 @@
 const BITRATES_ALLOCATIONS = [2, 4, 8, 16, 32, 64, 128, 256];
 
+function opposite(num) {
+    /** Description: This function returns the opposite of a binary number
+     * @param {string} num The binary number to convert
+     * @returns {string} The opposite of the binary number
+     */
+    let bits = num.split(""); // Convert the string "0101" into an array as [0, 1, 0, 1]
+    let oppositeBits = [];
+    for (let i = 0; i < bits.length; i++) {
+        oppositeBits.push(1 - bits[i]);
+    }
+    return oppositeBits.join("");
+}
+
 class Node {
-    constructor(code) {
+    /**
+     * Description: This class represents a node in a binary tree
+     * @param {string} code The code of the node
+     * @param {number} rate The rate of the node
+     * @param {number} treeLevel The level of the node in the tree
+     * @returns {Node} A node in a binary tree
+     */
+    constructor(code, rate, treeLevel) {
         this.code = code;
-        this.rate = null;
+        this.rate = rate;
         this.isAllocated = null;
         this.isAncestorsFree = new Boolean(true);
-        this.treeLevel = null;
+        this.treeLevel = treeLevel;
         this.left = null;
         this.right = null;
-    }
-
-    getBits() { // Convert the string "0101" into an array as [0, 1, 0, 1]
-        bits = this.code.split("");
-    }
-
-    length() {
-        return this.code.length;
-    }
-
-    dot(rhs) {
-        // Does the scalar product "."
-        if (this.length() !== rhs.length()) {
-            throw new Error("Both codes doesn't have the same length.");
-        }
-
-        let sum = 0;
-        for (let i = 0; i < this.length(); i++) {
-            sum += this.getBits[i] * rhs.getBits[i];
-        }
-        return sum;
-    }
-
-    isOrthogonal(rhs) {
-        if (this.length() !== rhs.length()) {
-            throw new Error("Both codes doesn't have the same length.");
-        }
-
-        if (this.dot(rhs) !== 0) {
-            return false;
-        }
-
-        return true;
     }
 }
 
 class BinaryTree {
-    constructor() {
-        this.root = null;
+    /**
+     * Description: This class represents a binary tree
+     * @param {string} root The root of the tree
+     * @param {number} rate The rate of the root
+     * @param {number} levelNeeded The level of the tree
+     * @returns {BinaryTree} A binary tree
+     */
+    constructor(root, rate, levelNeeded) {
+        this.root = new Node(root, rate, 0);
+        this.buildOVSFNode(this.root, 0, levelNeeded);
+    }
+
+    buildOVSFNode(node, currentLevel, levelNeeded) {
+        /** Description: This function builds the OVSF codes in the tree
+         * @param {Node} node The node to build the OVSF codes from
+         * @param {number} currentLevel The current level of the tree
+         * @param {number} levelNeeded The level to reach in the tree before stopping the building
+         * @returns {void}
+         * */
+        if (currentLevel < levelNeeded) {
+            node.left = new Node(node.code + node.code, node.rate, currentLevel + 1);
+            node.right = new Node(node.code + opposite(node.code), node.rate, currentLevel + 1); 
+            this.buildOVSFNode(node.left, currentLevel + 1, levelNeeded);
+            this.buildOVSFNode(node.right, currentLevel + 1, levelNeeded);
+        }
     }
 
     print(node = this.root, level = 0, prefix = '') {
+        // Print the tree
         if (node !== null) {
             this.print(node.right, level + 1, 'R➜');
             console.log('level '+level+' : '+' '.repeat(level * 4) + prefix + node.code);
@@ -69,23 +80,24 @@ class BinaryTree {
         }
     }
 
-    insertNode(node, newNode) {
-        if (newNode.code < node.code) {
-            if (node.left === null) {
-                node.left = newNode;
-            } else {
-                this.insertNode(node.left, newNode);
-            }
+    insertNode(node, newNode) { // ----- N'est pas utilisée
+        /** Description : Insert a node in the tree
+         * @param {Node} node The node to insert the new node in
+         * @param {Node} newNode The new node to insert in the tree
+         * @returns {void}
+         */
+        if (node.left === null) { // If the left child of the current node is empty
+            node.left = newNode;
+        }
+        else if (node.right === null) {
+            node.right = newNode;
         } else {
-            if (node.right === null) {
-                node.right = newNode;
-            } else {
-                this.insertNode(node.right, newNode);
-            }
+            this.insertNode(node.right, newNode);
         }
     }
 
     findNode(node, rate) {
+        // Description : Look for a node with a specific rate
         if (node == null || node.isAllocated) {
             return null;
         } else if (node.code == rate) {
@@ -95,18 +107,8 @@ class BinaryTree {
         }
     }
 
-    findOSVFbycode(code) {
-        if (node !== null) {
-            if (node.code === code) {
-                return node;
-            } else {
-                this.findFreeOVSF(node.left);
-                this.findFreeOVSF(node.right);
-            }
-        }
-    }
-
     findFreeOVSF(node) {
+        // Description : Look for a free OVSF code
         if (node !== null) {
             if (node.isAllocated !== null) {
                 return node;
@@ -118,7 +120,7 @@ class BinaryTree {
     }
 
     free(code) {
-        // Parcourir l'arbre pour trouver le noeud avec le code correspondant
+        // Description : Look for the node with a specific code and set it as free
         let node = this.findNodeByCode(this.root, code);
         if (node) {
             node.isAllocated = false;
@@ -126,6 +128,7 @@ class BinaryTree {
     }
 
     findNodeByCode(node, code) {
+        // Description : Look for a node with a specific code
         if (node == null) {
             return null;
         } else if (node.code == code) {
@@ -134,7 +137,7 @@ class BinaryTree {
             return this.findNodeByCode(node.left, code) || this.findNodeByCode(node.right, code);
         }
     }
-    
+
     codeCount(node = this.root) {
         if (node === null) {
             return 0;
@@ -171,16 +174,11 @@ class BinaryTree {
     
 }
 
-const binaryTree = new BinaryTree();
-const osvfCode_tmp = ["0", "1", "00", "11", "01", "10"];
-for (let i = 0; i < osvfCode_tmp.length; i++) {
-    binaryTree.insert(osvfCode_tmp[i]);
+function OVSFTreeBuilder() {
+    tree = new BinaryTree("0", 2048, 3);
+    tree.root.treeLevel = 0;
+    tree.print();
 }
-
-
-
-
-
 
 
 class Device {
@@ -200,7 +198,7 @@ class Communication {
     // Description: This class represents an entering communication waiting to be assigned an ovsf code
     constructor() {
         // Description: This constructor initializes the communication with random bitrate and size
-        this.bitrate = Math.floor(Math.random() * 255) + 2;
+        this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
         this.size = Math.floor(Math.random() * 999) + 2;
         this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
         this.duration = this.size / this.allocated_bitrate;
