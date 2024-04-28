@@ -1,4 +1,6 @@
 const BITRATES_ALLOCATIONS = [2, 4, 8, 16, 32, 64, 128, 256];
+const True = Boolean(true);
+const False = Boolean(false);
 
 function opposite(num) {
     /** Description: This function returns the opposite of a binary number
@@ -24,8 +26,8 @@ class Node {
     constructor(code, rate, treeLevel) {
         this.code = code;
         this.rate = rate;
-        this.isAllocated = null;
-        this.isAncestorsFree = new Boolean(true);
+        this.isAllocated = False;
+        this.isAncestorsFree = True;
         this.treeLevel = treeLevel;
         this.left = null;
         this.right = null;
@@ -53,8 +55,8 @@ class BinaryTree {
          * @returns {void}
          * */
         if (currentLevel < levelNeeded) {
-            node.left = new Node(node.code + node.code, node.rate, currentLevel + 1);
-            node.right = new Node(node.code + opposite(node.code), node.rate, currentLevel + 1); 
+            node.left = new Node(node.code + node.code, node.rate/2, currentLevel + 1);
+            node.right = new Node(node.code + opposite(node.code), node.rate/2, currentLevel + 1); 
             this.buildOVSFNode(node.left, currentLevel + 1, levelNeeded);
             this.buildOVSFNode(node.right, currentLevel + 1, levelNeeded);
         }
@@ -64,7 +66,7 @@ class BinaryTree {
         // Print the tree
         if (node !== null) {
             this.print(node.right, level + 1, 'R➜');
-            console.log('level '+level+' : '+' '.repeat(level * 4) + prefix + node.code);
+            console.log('level '+level+' : '+' '.repeat(level * 4) + prefix + node.code + ' | rate : ' + node.rate + ' | isAllocated : ' + node.isAllocated);
             this.print(node.left, level + 1, 'L⬅');
         }
     }
@@ -98,24 +100,17 @@ class BinaryTree {
 
     findNode(node, rate) {
         // Description : Look for a node with a specific rate
-        if (node == null || node.isAllocated) {
-            return null;
-        } else if (node.code == rate) {
-            return node;
-        } else {
-            return this.findNode(node.left, rate) || this.findNode(node.right, rate);
-        }
-    }
-
-    findFreeOVSF(node) {
-        // Description : Look for a free OVSF code
+        console.log(node);
         if (node !== null) {
-            if (node.isAllocated !== null) {
+            if (node.rate === rate && node.isAllocated ===False) {
+                console.log("node found");
                 return node;
-            } else {
-                this.findFreeOVSF(node.left);
-                this.findFreeOVSF(node.right);
+            } else { //TODO : check the level of each node found and take the lower one
+                return this.findNode(node.left, rate) || this.findNode(node.right, rate);
             }
+        } else {
+            console.log("node not found");
+            return null;
         }
     }
 
@@ -145,8 +140,24 @@ class BinaryTree {
         
         return 1 + this.codeCount(node.left) + this.codeCount(node.right);
     }
+    allocateOVSFCode(requestRate) {
+        // Description : Allocate an OVSF code
+        let node = this.findNode(this.root, requestRate);
+        if (node) {
+            node.isAllocated = true;
+            console.log("OVSF code " + node.code + " allocated");
+            return node.code;
+        } else {
+            console.log("No OVSF code available");
+            return null;
+        }
+    }
+
+
     
     calcShortestFreeCode(requestLen) {
+        // Description : Calculate the shortest free code
+        // Check if the request length is a power of two
         if (!isPowerOfTwo(requestLen)) {
             return 0;
         }
@@ -164,7 +175,7 @@ class BinaryTree {
             const nodeCount = 1 << lv;
     
             for (let k = 0; k < nodeCount; k++) {
-                if (tree.nodes[beginNode + k].isFreeCode()) {
+                if (!tree.nodes[beginNode + k].isAllocated) {
                     return codeLen;
                 }
             }
@@ -176,8 +187,10 @@ class BinaryTree {
 
 function OVSFTreeBuilder() {
     tree = new BinaryTree("0", 2048, 3);
+    tree.isAllocated = true;
     tree.root.treeLevel = 0;
     tree.print();
+    tree.allocateOVSFCode(256);
 }
 
 
