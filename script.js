@@ -238,3 +238,33 @@ class Communication {
 
 const com1 = new Communication();
 com1.print();
+
+function generateHTML(node, level) {
+    if (!node) return "";
+  
+    const left = generateHTML(node.left, level + 1);
+    const right = generateHTML(node.right, level + 1);
+  
+    return `
+        <li>
+            <div class="node">
+                <!--div class="code">${node.code}</div!-->
+                <div class="rate">${node.rate}</div>
+                <!--div class="isAllocated">${node.isAllocated}</div!-->
+            </div>
+            <ul>
+                ${left}
+                ${right}
+            </ul>
+        </li>
+
+    `;
+  }
+
+    const tree = new BinaryTree("0", 2048, 10);
+    tree.isAllocated = true;
+    tree.root.treeLevel = 0;
+    tree.print();
+    const html = generateHTML(tree.root, 0);
+    const container = document.getElementById("tree");
+    container.innerHTML = html;
