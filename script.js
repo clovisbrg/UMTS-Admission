@@ -1,4 +1,4 @@
-const BITRATES_ALLOCATIONS = [2, 4, 8, 16, 32, 64, 128, 256];
+const BITRATES_ALLOCATIONS = [128,256];//[2, 4, 8, 16, 32, 64, 128, 256];
 const True = Boolean(true);
 const False = Boolean(false);
 
@@ -99,31 +99,38 @@ class BinaryTree {
     }
 
     findNode(node, rate) {
-        // Description : Look for a node with a specific rate
-        console.log(node);
+        // Description : Look for an AVAILABLE node with a specific rate
         if (node !== null) {
-            if (node.rate === rate && node.isAllocated ===False) {
+            if (node.rate === rate && node.isAllocated === False) {
                 console.log("node found");
                 return node;
             } else { //TODO : check the level of each node found and take the lower one
                 return this.findNode(node.left, rate) || this.findNode(node.right, rate);
             }
         } else {
-            console.log("node not found");
+            //console.log("node not found in this branch");
             return null;
         }
     }
 
-    free(code) {
+    free(root, code) {
         // Description : Look for the node with a specific code and set it as free
-        let node = this.findNodeByCode(this.root, code);
+        let node = this.findNodeByCode(root, code);
+
         if (node) {
+            console.log("OVSF code " + node.code + " freed");
             node.isAllocated = false;
+        }else{
+            console.log("No OVSF code found to be freed")
         }
     }
 
     findNodeByCode(node, code) {
-        // Description : Look for a node with a specific code
+        /** Description : Look for a node with a specific code
+         * @param {Node} node The node to start the search from
+         * @param {string} code The code of the node to find
+         * @returns {Node} The node with the specific code
+         **/
         if (node == null) {
             return null;
         } else if (node.code == code) {
@@ -133,15 +140,11 @@ class BinaryTree {
         }
     }
 
-    codeCount(node = this.root) {
-        if (node === null) {
-            return 0;
-        }
-        
-        return 1 + this.codeCount(node.left) + this.codeCount(node.right);
-    }
     allocateOVSFCode(requestRate) {
-        // Description : Allocate an OVSF code
+        /** Description : Allocate an OVSF code
+         * @param {number} requestRate The rate of the communication
+         * @returns {string} The OVSF code allocated
+         **/
         let node = this.findNode(this.root, requestRate);
         if (node) {
             node.isAllocated = true;
@@ -152,58 +155,78 @@ class BinaryTree {
             return null;
         }
     }
-
-
-    
-    calcShortestFreeCode(requestLen) {
-        // Description : Calculate the shortest free code
-        // Check if the request length is a power of two
-        if (!isPowerOfTwo(requestLen)) {
-            return 0;
-        }
-    
-        const lastNode = tree.codeCount();
-        const lastLevel = Math.log2(lastNode - 1);
-        for (let lv = 2; lv <= lastLevel; lv++) {
-            const codeLen = 1 << lv;
-    
-            if (codeLen < requestLen) {
-                continue;
-            }
-    
-            const beginNode = 1 << lv;
-            const nodeCount = 1 << lv;
-    
-            for (let k = 0; k < nodeCount; k++) {
-                if (!tree.nodes[beginNode + k].isAllocated) {
-                    return codeLen;
-                }
-            }
-        }
-        return 0;
-    }
-    
 }
 
 function OVSFTreeBuilder() {
-    tree = new BinaryTree("0", 2048, 3);
+    tree = new BinaryTree("0", 2048, 4);
     tree.isAllocated = true;
     tree.root.treeLevel = 0;
     tree.print();
-    tree.allocateOVSFCode(256);
+
+    const generator = new CommunicationGenerator(tree);
+    generator.generateCommunication(6);
 }
 
+class CommunicationGenerator {
+    /** Description: This class generates communications
+     * @param {BinaryTree} tree The tree to allocate the OVSF codes
+     * @returns {CommunicationGenerator} A communication generator
+     **/
+    constructor(tree) {
+        /** Description: This constructor initializes the communication generator
+         * communications : The list of communications
+         * worker : The worker to handle the communications
+         **/
+        this.tree = tree;
+        this.communications = [];
+        this.worker = new Worker('communication.js');
+        // Add an event listener to listen for messages from the worker
+        // We attach the handleWorkerMessage function as a callback to the message event
+        this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
+        // bind(this) est utilisé pour s'assurer que le contexte (this) à l'intérieur 
+        // de handleWorkerMessage fait référence à l'instance de CommunicationGenerator.
+    }
+
+    generateCommunication(total_communication) {
+        /** Description: This function generates a communication at a random interval
+         * @param {number} total_communication The number of communications to generate
+         * **/
+        while (total_communication > 0) {
+            total_communication--;
+            setTimeout(() => { // We wait for a random interval before generating the communication
+                let com = new Communication(); // Create a new communication
+                com.ovsfCode = this.tree.allocateOVSFCode(com.allocated_bitrate); // Allocate an OVSF code to the communication
+                com.print();
+                if (com.ovsfCode === null) {
+                    console.log("Communication " + com.ovsfCode + " not allocated");
+                } else {
+                    console.log("Communication " + com.ovsfCode + " allocated");
+                    this.communications.push(com); // Add the communication to the list of communications
+                    this.worker.postMessage(com); // Send a message to the worker to start the communication
+                }
+            },Math.floor(Math.random() * 6000) + 3000); // Random interval between 3 and 5 seconds
+        }
+    }
+
+    handleWorkerMessage(event) {
+        /** Description: This function handles messages received from the worker
+         * @param {Event} event The event received from the worker
+         **/
+        console.log('Communication ' + event.data.ovsfCode + ' ended...');
+        tree.free(tree.root, event.data.ovsfCode);
+    }
+}
 
 class Device {
     // Description: This class represents a device in the network
     constructor(name){
         this.name = name;
         this.currentCommunication = null;
-        this.osvfCode = null;
+        this.ovsfCode = null;
     }
     print(){
         // Description: This function prints the device's attributes
-        console.log(this.name + " " + this.osvfCode);
+        console.log(this.name + " " + this.ovsfCode);
     }
 }
 
@@ -215,6 +238,7 @@ class Communication {
         this.size = Math.floor(Math.random() * 999) + 2;
         this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
         this.duration = this.size / this.allocated_bitrate;
+        this.ovsfCode = null;
     }
 
     allocate_bitrate(length) {
@@ -233,11 +257,9 @@ class Communication {
         console.log("Size: " + this.size + " kb");
         console.log("Allocated Bitrate: " + this.allocated_bitrate + " kbps");
         console.log("Duration: " + this.duration + " s");
+        console.log("OVSF Code: " + this.ovsfCode);
     }
 }
-
-const com1 = new Communication();
-com1.print();
 
 function generateHTML(node, level) {
     if (!node) return "";
@@ -261,10 +283,10 @@ function generateHTML(node, level) {
     `;
   }
 
-    const tree = new BinaryTree("0", 2048, 10);
-    tree.isAllocated = true;
-    tree.root.treeLevel = 0;
-    tree.print();
-    const html = generateHTML(tree.root, 0);
-    const container = document.getElementById("tree");
-    container.innerHTML = html;
+    // const tree = new BinaryTree("0", 2048, 10);
+    // tree.isAllocated = true;
+    // tree.root.treeLevel = 0;
+    // tree.print();
+    // const html = generateHTML(tree.root, 0);
+    // const container = document.getElementById("tree");
+    // container.innerHTML = html;
