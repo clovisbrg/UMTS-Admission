@@ -1,4 +1,4 @@
-/* styles.css */
+/* --------------------D3.js binary tree ----------------*/
 .node {
   cursor: pointer;
 }
@@ -21,7 +21,32 @@
 body {
   overflow: hidden;
 }
+.tooltip {
+  position: absolute;
+  text-align: center;
+  width: auto;
+  height: auto;
+  padding: 5px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
 
+#body {
+  width: 960px;
+  height: 600px;
+  margin: 20px;
+  margin-top: 5px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  position: relative;
+}
+
+/* -------------------Webpage banner----------------- */
 .top-banner {
   background-color: #333;
   color: white;
@@ -60,3 +85,50 @@ body {
 .control-button:hover {
   background-color: #777;
 }
+
+
+
+/*---------------------Communication tile styling --------------------*/
+#communications-container {
+  width: 960px;
+  margin: 20px auto;
+  margin-top: 5px;
+  padding: 10px;
+  border: 2px solid #333;
+  border-radius: 8px;
+}
+
+.communication {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.communication h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.communication p {
+  margin: 5px 0;
+}
+
+.slider-container {
+  margin-top: 10px;
+}
+
+.slider {
+  width: 100%;
+}
+
+
+/* Grid layout */
+.grid-container {
+  display: grid;
+  grid-template-columns: auto auto; /* Adjust the columns as needed */
+  gap: 20px; /* Adjust the gap between elements */
+}
+

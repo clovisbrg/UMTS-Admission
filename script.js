@@ -157,16 +157,6 @@ class BinaryTree {
     }
 }
 
-function OVSFTreeBuilder() {
-    tree = new BinaryTree("0", 2048, 4);
-    tree.isAllocated = true;
-    tree.root.treeLevel = 0;
-    tree.print();
-
-    const generator = new CommunicationGenerator(tree);
-    generator.generateCommunication(6);
-}
-
 class CommunicationGenerator {
     /** Description: This class generates communications
      * @param {BinaryTree} tree The tree to allocate the OVSF codes
@@ -203,6 +193,7 @@ class CommunicationGenerator {
                     console.log("Communication " + com.ovsfCode + " allocated");
                     this.communications.push(com); // Add the communication to the list of communications
                     this.worker.postMessage(com); // Send a message to the worker to start the communication
+                    this.displayCommunication(com); // Display the communication in the UI
                 }
             },Math.floor(Math.random() * 6000) + 3000); // Random interval between 3 and 5 seconds
         }
@@ -213,7 +204,51 @@ class CommunicationGenerator {
          * @param {Event} event The event received from the worker
          **/
         console.log('Communication ' + event.data.ovsfCode + ' ended...');
-        tree.free(tree.root, event.data.ovsfCode);
+        this.tree.free(tree.root, event.data.ovsfCode);
+        this.removeCommunication(event.data.ovsfCode);
+    }
+
+    //LE SLIDER EST BUGGé
+    displayCommunication(commData) {
+        const container = document.getElementById('communications-container');
+        const commElement = document.createElement('div');
+        commElement.id = `comm-${commData.ovsfCode}`;
+        commElement.className = 'communication';
+        commElement.innerHTML = `
+            <h3>Communication Code: ${commData.ovsfCode}</h3>
+            <p>Duration: ${commData.duration}s</p>
+            <div class="slider-container">
+                <input type="range" min="0" max="${commData.duration}" value="0" class="slider" id="slider-${commData.ovsfCode}">
+            </div>
+        `;
+        container.appendChild(commElement);
+
+            // Update the slider over time
+        const slider = document.getElementById(`slider-${commData.ovsfCode}`);
+        let currentValue = 0;
+        const updateInterval = 10; // Update interval in milliseconds
+        const steps = Math.ceil(commData.duration * 1000 / updateInterval); // Total number of steps
+        const stepSize = 1 / steps;
+        const updateStep = () => {
+            currentValue += stepSize;
+            slider.value = currentValue * commData.duration;
+            if (currentValue >= 1) {
+                clearInterval(interval);
+            }
+        };
+        const interval = setInterval(updateStep, updateInterval);
+
+        // Store interval reference with communication element
+        commElement.interval = interval;
+    }
+
+    removeCommunication(ovsfCode) {
+        const commElement = document.getElementById(`comm-${ovsfCode}`);
+        if (commElement) {
+            // Clear the interval before removing the communication
+            clearInterval(commElement.interval);
+            commElement.remove();
+        }
     }
 }
 
@@ -222,7 +257,7 @@ class Communication {
     constructor() {
         // Description: This constructor initializes the communication with random bitrate and size
         this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
-        this.size = Math.floor(Math.random() * 999) + 2;
+        this.size = Math.floor(Math.random() * 9999) + 2000;
         this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
         this.duration = this.size / this.allocated_bitrate;
         this.ovsfCode = null;
@@ -248,10 +283,25 @@ class Communication {
     }
 }
 
-//USING D3.js
-
 const OVSFtree = new BinaryTree("0", 2048, 10);
-root = generateTreeData(OVSFtree.root);
+var root = generateTreeData(OVSFtree.root);
+
+document.getElementById('playButton').addEventListener('click', function() {
+    Main();
+});
+
+function Main() {
+    //tree = new BinaryTree("0", 2048, 4);
+    OVSFtree.isAllocated = true;
+    OVSFtree.root.treeLevel = 0;
+    OVSFtree.print();
+
+    const generator = new CommunicationGenerator(OVSFtree);
+    generator.generateCommunication(6);
+}
+
+
+//DISPLAY THE TREE USING D3.js
 
 function generateTreeData(node) {
     if (!node) {
@@ -261,6 +311,8 @@ function generateTreeData(node) {
     // Structure compatible avec D3.js
     const treeData = {
       name: node.rate.toString(),
+      code: node.code.toString(),
+      isAllocated: node.isAllocated,
       children: []
     };
   
@@ -280,10 +332,8 @@ function generateTreeData(node) {
     return treeData;
   }
 
-
-
 const width = 960;
-const height = 600;
+const height = 400;
 
 var i = 0,
     duration = 150,
@@ -296,7 +346,7 @@ var diagonal = d3.svg.diagonal()
     return [d.x + rectW / 2, d.y + rectH / 2];
 });
 
-var svg = d3.select("#body").append("svg").attr("width", 1000).attr("height", 1000)
+var svg = d3.select("#body").append("svg").attr("width", 960).attr("height", 800)
     .call(zm = d3.behavior.zoom().scaleExtent([1,3]).on("zoom", redraw)).append("g")
     .attr("transform", "translate(" + 350 + "," + 20 + ")");
 
@@ -318,6 +368,10 @@ root.children.forEach(collapse);
 update(root);
 
 d3.select("#body").style("height", "800px");
+
+// Tooltip element
+var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip");
 
 function update(source) {
 
@@ -342,7 +396,20 @@ function update(source) {
         .attr("transform", function (d) {
         return "translate(" + source.x0 + "," + source.y0 + ")";
     })
-        .on("click", click);
+        .on("click", click)
+        .on("mouseover", function(d) {
+            tooltip.transition()
+                .duration(0)
+                .style("opacity", .9);
+            tooltip.html("Code: " + d.code)
+                .style("left", (d3.event.pageX + 5) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(0)
+                .style("opacity", 0);
+        });
 
     nodeEnter.append("rect")
         .attr("width", rectW)
@@ -350,6 +417,7 @@ function update(source) {
         .attr("stroke", "black")
         .attr("stroke-width", 1)
         .style("fill", function (d) {
+        if (d.isAllocated) return "red";
         return d._children ? "lightsteelblue" : "#fff";
     });
 
@@ -375,6 +443,7 @@ function update(source) {
         .attr("stroke", "black")
         .attr("stroke-width", 1)
         .style("fill", function (d) {
+        if (d.isAllocated) return "red";
         return d._children ? "lightsteelblue" : "#fff";
     });
 
