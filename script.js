@@ -250,6 +250,9 @@ class Communication {
 
 //USING D3.js
 
+const OVSFtree = new BinaryTree("0", 2048, 10);
+root = generateTreeData(OVSFtree.root);
+
 function generateTreeData(node) {
     if (!node) {
       return null;
@@ -277,9 +280,7 @@ function generateTreeData(node) {
     return treeData;
   }
 
-const OVSFtree = new BinaryTree("0", 2048, 10);
-root = generateTreeData(OVSFtree.root);
-console.log(root);
+
 
 const width = 960;
 const height = 600;
