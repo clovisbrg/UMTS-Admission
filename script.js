@@ -113,9 +113,9 @@ class BinaryTree {
         }
     }
 
-    free(root, code) {
+    free(treeRoot, code) {
         // Description : Look for the node with a specific code and set it as free
-        let node = this.findNodeByCode(root, code);
+        let node = this.findNodeByCode(treeRoot, code);
 
         if (node) {
             console.log("OVSF code " + node.code + " freed");
@@ -162,12 +162,11 @@ class CommunicationGenerator {
      * @param {BinaryTree} tree The tree to allocate the OVSF codes
      * @returns {CommunicationGenerator} A communication generator
      **/
-    constructor(tree) {
+    constructor() {
         /** Description: This constructor initializes the communication generator
          * communications : The list of communications
          * worker : The worker to handle the communications
          **/
-        this.tree = tree;
         this.communications = [];
         this.worker = new Worker('communication.js');
         // Add an event listener to listen for messages from the worker
@@ -185,7 +184,7 @@ class CommunicationGenerator {
             total_communication--;
             setTimeout(() => { // We wait for a random interval before generating the communication
                 let com = new Communication(); // Create a new communication
-                com.ovsfCode = this.tree.allocateOVSFCode(com.allocated_bitrate); // Allocate an OVSF code to the communication
+                com.ovsfCode = OVSFtree.allocateOVSFCode(com.allocated_bitrate); // Allocate an OVSF code to the communication
                 com.print();
                 if (com.ovsfCode === null) {
                     console.log("Communication " + com.ovsfCode + " not allocated");
@@ -195,6 +194,12 @@ class CommunicationGenerator {
                     this.worker.postMessage(com); // Send a message to the worker to start the communication
                     this.displayCommunication(com); // Display the communication in the UI
                 }
+
+                //updates the data for d3.js to display the tree
+                d3Root = generateTreeData(OVSFtree.root);
+                d3Root.children.forEach(collapse);
+                update(d3Root);
+
             },Math.floor(Math.random() * 6000) + 3000); // Random interval between 3 and 5 seconds
         }
     }
@@ -204,7 +209,14 @@ class CommunicationGenerator {
          * @param {Event} event The event received from the worker
          **/
         console.log('Communication ' + event.data.ovsfCode + ' ended...');
-        this.tree.free(tree.root, event.data.ovsfCode);
+        console.log(event.data);
+        OVSFtree.free(OVSFtree.root, event.data.ovsfCode);
+
+        //updates the data for d3.js to display the tree
+        d3Root = generateTreeData(OVSFtree.root);
+        d3Root.children.forEach(collapse);
+        update(d3Root);
+
         this.removeCommunication(event.data.ovsfCode);
     }
 
@@ -217,36 +229,15 @@ class CommunicationGenerator {
         commElement.innerHTML = `
             <h3>Communication Code: ${commData.ovsfCode}</h3>
             <p>Duration: ${commData.duration}s</p>
-            <div class="slider-container">
-                <input type="range" min="0" max="${commData.duration}" value="0" class="slider" id="slider-${commData.ovsfCode}">
-            </div>
+            <p>Bitrate: ${commData.bitrate} kbps</p>
+            <p>Size: ${commData.size} kb</p>
         `;
         container.appendChild(commElement);
-
-            // Update the slider over time
-        const slider = document.getElementById(`slider-${commData.ovsfCode}`);
-        let currentValue = 0;
-        const updateInterval = 10; // Update interval in milliseconds
-        const steps = Math.ceil(commData.duration * 1000 / updateInterval); // Total number of steps
-        const stepSize = 1 / steps;
-        const updateStep = () => {
-            currentValue += stepSize;
-            slider.value = currentValue * commData.duration;
-            if (currentValue >= 1) {
-                clearInterval(interval);
-            }
-        };
-        const interval = setInterval(updateStep, updateInterval);
-
-        // Store interval reference with communication element
-        commElement.interval = interval;
     }
 
     removeCommunication(ovsfCode) {
         const commElement = document.getElementById(`comm-${ovsfCode}`);
         if (commElement) {
-            // Clear the interval before removing the communication
-            clearInterval(commElement.interval);
             commElement.remove();
         }
     }
@@ -256,10 +247,12 @@ class Communication {
     // Description: This class represents an entering communication waiting to be assigned an ovsf code
     constructor() {
         // Description: This constructor initializes the communication with random bitrate and size
-        this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
-        this.size = Math.floor(Math.random() * 9999) + 2000;
+        //this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
+        this.bitrate = 256;
+        //this.size = Math.floor(Math.random() * 99) + 200;
+        this.size = 20000;
         this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
-        this.duration = this.size / this.allocated_bitrate;
+        this.duration = this.size / this.bitrate;
         this.ovsfCode = null;
     }
 
@@ -283,18 +276,20 @@ class Communication {
     }
 }
 
-const OVSFtree = new BinaryTree("0", 2048, 10);
-var root = generateTreeData(OVSFtree.root);
+var OVSFtree = new BinaryTree("0", 2048, 10);
+var d3Root = generateTreeData(OVSFtree.root);
+OVSFtree.isAllocated = true;
+OVSFtree.root.treeLevel = 0;
+generator = new CommunicationGenerator();
+//OVSFtree.print();
 
 document.getElementById('playButton').addEventListener('click', function() {
-    Main();
+    //const generator = new CommunicationGenerator(OVSFtree);
+    generator.generateCommunication(1);
 });
 
 function Main() {
     //tree = new BinaryTree("0", 2048, 4);
-    OVSFtree.isAllocated = true;
-    OVSFtree.root.treeLevel = 0;
-    OVSFtree.print();
 
     const generator = new CommunicationGenerator(OVSFtree);
     generator.generateCommunication(6);
@@ -330,7 +325,7 @@ function generateTreeData(node) {
     }
   
     return treeData;
-  }
+}
 
 const width = 960;
 const height = 400;
@@ -353,8 +348,8 @@ var svg = d3.select("#body").append("svg").attr("width", 960).attr("height", 800
 //necessary so that zoom knows where to zoom and unzoom from
 zm.translate([350, 20]);
 
-root.x0 = 0;
-root.y0 = height / 2;
+d3Root.x0 = 0;
+d3Root.y0 = height / 2;
 
 function collapse(d) {
     if (d.children) {
@@ -364,8 +359,8 @@ function collapse(d) {
     }
 }
 
-root.children.forEach(collapse);
-update(root);
+d3Root.children.forEach(collapse);
+update(d3Root);
 
 d3.select("#body").style("height", "800px");
 
@@ -376,7 +371,7 @@ var tooltip = d3.select("body").append("div")
 function update(source) {
 
     // Compute the new tree layout.
-    var nodes = tree.nodes(root).reverse(),
+    var nodes = tree.nodes(d3Root).reverse(),
         links = tree.links(nodes);
 
     // Normalize for fixed-depth.
