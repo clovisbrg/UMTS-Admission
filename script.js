@@ -220,7 +220,6 @@ class CommunicationGenerator {
         this.removeCommunication(event.data.ovsfCode);
     }
 
-    //LE SLIDER EST BUGGé
     displayCommunication(commData) {
         const container = document.getElementById('communications-container');
         const commElement = document.createElement('div');
@@ -231,8 +230,25 @@ class CommunicationGenerator {
             <p>Duration: ${commData.duration}s</p>
             <p>Bitrate: ${commData.bitrate} kbps</p>
             <p>Size: ${commData.size} kb</p>
+            <p>Time Left: <span id="timer-${commData.ovsfCode}">${commData.duration}.000</span>s</p>
         `;
         container.appendChild(commElement);
+
+        // Update the timer over time
+        const timerElement = document.getElementById(`timer-${commData.ovsfCode}`);
+        let endTime = Date.now() + commData.duration * 1000;
+
+        const interval = setInterval(() => {
+            let timeLeft = endTime - Date.now();
+            if (timeLeft > 0) {
+                let seconds = Math.floor(timeLeft / 1000);
+                let milliseconds = timeLeft % 1000;
+                timerElement.textContent = `${seconds}.${milliseconds.toString().padStart(3, '0')}`;
+            } else {
+                clearInterval(interval);
+                timerElement.textContent = '0.000';
+            }
+        }, 10);
     }
 
     removeCommunication(ovsfCode) {

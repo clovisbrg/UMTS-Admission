@@ -18,6 +18,7 @@
 
 // Add an event listener to listen for messages from the main thread
 self.addEventListener('message', function(event) {
+    
     // Call the worker function when a message is received
     console.log("--- Commmunication to start : " + event.data);
     // if (typeof(event.data) !== 'string') {
