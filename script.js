@@ -188,6 +188,7 @@ class CommunicationGenerator {
                 com.print();
                 if (com.ovsfCode === null) {
                     console.log("Communication " + com.ovsfCode + " not allocated");
+                    this.displayRejectedCommunication(com); // Display the rejected communication in the UI
                 } else {
                     console.log("Communication " + com.ovsfCode + " allocated");
                     this.communications.push(com); // Add the communication to the list of communications
@@ -257,6 +258,22 @@ class CommunicationGenerator {
             commElement.remove();
         }
     }
+
+    displayRejectedCommunication(commData) {
+        const container = document.getElementById('communications-container');
+        const commElement = document.createElement('div');
+        commElement.className = 'rejected_communication';
+        commElement.innerHTML = `
+            <h3>Communication Code: REJECTED</h3>
+            <p>Duration: ${commData.duration}s</p>
+            <p>Bitrate: ${commData.bitrate} kbps</p>
+            <p>Size: ${commData.size} kb</p>
+        `;
+        container.appendChild(commElement);
+        setTimeout(() => {
+            commElement.remove();
+        }, 5000);
+    }
 }
 
 class Communication {
@@ -301,16 +318,8 @@ generator = new CommunicationGenerator();
 
 document.getElementById('playButton').addEventListener('click', function() {
     //const generator = new CommunicationGenerator(OVSFtree);
-    generator.generateCommunication(1);
+    generator.generateCommunication(10);
 });
-
-function Main() {
-    //tree = new BinaryTree("0", 2048, 4);
-
-    const generator = new CommunicationGenerator(OVSFtree);
-    generator.generateCommunication(6);
-}
-
 
 //DISPLAY THE TREE USING D3.js
 

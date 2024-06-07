@@ -96,6 +96,7 @@ body {
   padding: 10px;
   border: 2px solid #333;
   border-radius: 8px;
+  overflow-y: auto;
 }
 
 .communication {
@@ -116,14 +117,15 @@ body {
   margin: 5px 0;
 }
 
-.slider-container {
-  margin-top: 10px;
+.rejected_communication {
+  background-color: #eb2020;
+  opacity: 0.8;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  position: relative;
 }
-
-.slider {
-  width: 100%;
-}
-
 
 /* Grid layout */
 .grid-container {
