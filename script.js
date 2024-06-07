@@ -21,14 +21,15 @@ class Node {
      * @param {string} code The code of the node
      * @param {number} rate The rate of the node
      * @param {number} treeLevel The level of the node in the tree
+     * @param {Node} parent The parent of the node
      * @returns {Node} A node in a binary tree
      */
-    constructor(code, rate, treeLevel) {
+    constructor(code, rate, treeLevel, parent = null) {
         this.code = code;
         this.rate = rate;
         this.isAllocated = False;
-        this.isAncestorsFree = True;
         this.treeLevel = treeLevel;
+        this.parent = parent;
         this.left = null;
         this.right = null;
     }
@@ -98,30 +99,87 @@ class BinaryTree {
         }
     }
 
-    findNode(node, rate) {
-        // Description : Look for an AVAILABLE node with a specific rate
+    isAllDescendantsFree(node) {
+        if (!node) return true;
+        if (node.isAllocated) return false;
+        return this.isAllDescendantsFree(node.left) && this.isAllDescendantsFree(node.right);
+    }
+
+    getPreemptiveNode(node) {
+        // Description : Look for a node with only one child allocated
+        if (!node) return true;
+        if (node.isAllocated) return node;
+        const leftResult = this.getPreemptiveNode(node.left);
+        if (leftResult !== true) return leftResult;
+        return this.getPreemptiveNode(node.right);
+    }
+ 
+    findNodeForPreemptiveMove(node, rate, id, is_ancestor_free = True) {
+        // Description : Look for a node with a specific rate that have only ONE child allocated       
         if (node !== null) {
-            if (node.rate === rate && node.isAllocated === False) {
-                console.log("node found");
-                return node;
-            } else { //TODO : check the level of each node found and take the lower one
-                return this.findNode(node.left, rate) || this.findNode(node.right, rate);
+            console.log(node.treeLevel + " | id : " + id + " | Looking for a node with rate: " + rate + " || Current node : (" + node.rate + ") | code : " + node.code +
+            " | ancestor_free : " + is_ancestor_free  + " | isAllocated : " + node.isAllocated);
+
+            if (node.treeLevel > 1 && node.rate === rate && node.isAllocated === False && !(node.left.isAllocated && node.right.isAllocated)) {
+                console.log("Trying with this node : " + node.code + " | left : " + node.left.isAllocated + " | right : " + node.right.isAllocated);
+                
+                let preemptiveNode = this.getPreemptiveNode(node);
+                
+                if (preemptiveNode !== true) {
+                    if (preemptiveNode && preemptiveNode.isAllocated) {
+                        console.log("preemptiveNode : " + preemptiveNode.code + " | isAllocated : " + preemptiveNode.isAllocated);
+                        let newAllocationNode = this.findNode(this.root, preemptiveNode.rate, id, true);
+                        if (newAllocationNode && newAllocationNode.code !== preemptiveNode.code) {
+                            this.reallocate(preemptiveNode, newAllocationNode);
+                        }
+                    }
+                }
+                if (this.isAllDescendantsFree(node)) {
+                    console.log("Node found for preemptive move");
+                    return node;
+                } else {
+                    console.log("preemptive move FAILED...");
+                }
+            } else if (node.rate > rate) {
+                return this.findNodeForPreemptiveMove(node.left, rate, id, (is_ancestor_free? is_ancestor_free : node.isAllocated)) || this.findNodeForPreemptiveMove(node.right, rate, id, (is_ancestor_free? is_ancestor_free : node.isAllocated));
             }
         } else {
-            //console.log("node not found in this branch");
+            console.log("node not found in this branch for preemptive move");
+            return null;
+        }
+    }
+
+    findNode(node, rate, id, is_ancestor_free = True) {
+        // Description : Look for an AVAILABLE node with a specific rate        
+        if (node !== null) {
+            if (node.code != "0" && node.code != "00" && node.code != "01") {
+                console.log(`${node.treeLevel} | id: ${id} | Looking for a node with rate: ${rate} || Current node: (${node.rate}) | code: ${node.code} | ancestor_free: ${is_ancestor_free} | isAllocated: ${node.isAllocated}`);
+            }
+            if (node.treeLevel > 1 && node.rate === rate && !node.isAllocated && is_ancestor_free === True) { 
+                if (this.isAllDescendantsFree(node)) {
+                    console.log("node found");
+                    return node;
+                } else {
+                    console.log("A node was found but not all descendants are free, a premptive move COULD BE needed...");
+                    return False;
+                }
+            } else if (node.rate > rate) {
+                return this.findNode(node.left, rate, id, is_ancestor_free && !node.isAllocated) || this.findNode(node.right, rate, id, is_ancestor_free && !node.isAllocated); // is_ancestor_free && !node.isAllocated === (is_ancestor_free? is_ancestor_free : node.isAllocated)
+            }
+        } else {
+            console.log("node not found in this branch");
             return null;
         }
     }
 
     free(treeRoot, code) {
         // Description : Look for the node with a specific code and set it as free
-        let node = this.findNodeByCode(treeRoot, code);
-
-        if (node) {
-            console.log("OVSF code " + node.code + " freed");
-            node.isAllocated = false;
-        }else{
-            console.log("No OVSF code found to be freed")
+        let targetNode = this.findNodeByCode(treeRoot, code);
+        if (targetNode) {
+            targetNode.isAllocated = false;
+            console.log(`OVSF code ${targetNode.code} freed: ${targetNode.isAllocated}`);
+        } else {
+            console.log("No OVSF code found to be freed");
         }
     }
 
@@ -131,43 +189,80 @@ class BinaryTree {
          * @param {string} code The code of the node to find
          * @returns {Node} The node with the specific code
          **/
-        if (node == null) {
-            return null;
-        } else if (node.code == code) {
-            return node;
-        } else {
-            return this.findNodeByCode(node.left, code) || this.findNodeByCode(node.right, code);
-        }
+        if (!node) return null;
+        if (node.code === code) return node;
+        return this.findNodeByCode(node.left, code) || this.findNodeByCode(node.right, code);
     }
 
-    allocateOVSFCode(requestRate) {
+    reallocate(node, new_allocation_node) {
+        // Description : Reallocate a node
+        console.log("REALLOCATION | Freeing this code " + node.code);
+        this.free(this.root, node.code);
+        new_allocation_node.isAllocated = True;
+        getCommunicationByCode(node.code).ovsfCode = new_allocation_node.code;
+        console.log("REALLOCATION | OVSF code " + new_allocation_node.code + " allocated : " + new_allocation_node.isAllocated);
+        return new_allocation_node.code;
+    }
+
+    allocateOVSFCode(requestRate, id) {
         /** Description : Allocate an OVSF code
          * @param {number} requestRate The rate of the communication
          * @returns {string} The OVSF code allocated
          **/
-        let node = this.findNode(this.root, requestRate);
+        let node = this.findNode(this.root, requestRate, id);
         if (node) {
+            console.log("Node found : " + node.code);
             node.isAllocated = true;
-            console.log("OVSF code " + node.code + " allocated");
             return node.code;
+        } else if (node === False) {
+            console.log("Try a preemptive procedure");
+            let newNode = this.findNodeForPreemptiveMove(this.root, requestRate, id);
+            if (newNode) {
+                console.log("New node found for the preemptive procedure: " + newNode);
+                return newNode.code;
+            } else {
+                console.log("Preemptive procedure failed, the communication n " + id + " is dropped :(");
+                return null;
+            }
         } else {
-            console.log("No OVSF code available");
+            console.log("No OVSF code available, the communication n " + id + " is dropped :(");
             return null;
         }
     }
 }
 
+function OVSFTreeBuilder() {
+    // Description : Build the OVSF tree and provoke collisions to test the preemptive procedure
+    tree = new BinaryTree("0", 2048, 4);
+    tree.isAllocated = true;
+    tree.root.treeLevel = 0;
+    tree.print();
+    // Predefined bitrates and durations to provoke collisions and preemptive moves
+    let PredefinedBitrate = [256, 256, 256, 256, 256, 256, 128, 128, 128, 256];
+    let PredefinedDuration = [15, 15, 15, 15, 15, 15, 10, 1, 10, 5];
+
+    const generator = new CommunicationGenerator(tree);
+    generator.generateCommunication(10, PredefinedBitrate, PredefinedDuration);
+}
+
+let communications = [];
+
+function getCommunicationByCode(code) {
+    /** Description: This function returns a communication by its code
+     * @param {string} code The code of the communication to find
+     * @returns {Communication} The communication with the specific code
+     * */
+    return communications.find(comm => comm.ovsfCode === code);
+}
+
 class CommunicationGenerator {
     /** Description: This class generates communications
-     * @param {BinaryTree} tree The tree to allocate the OVSF codes
      * @returns {CommunicationGenerator} A communication generator
      **/
     constructor() {
         /** Description: This constructor initializes the communication generator
-         * communications : The list of communications
          * worker : The worker to handle the communications
          **/
-        this.communications = [];
         this.worker = new Worker('communication.js');
         // Add an event listener to listen for messages from the worker
         // We attach the handleWorkerMessage function as a callback to the message event
@@ -176,26 +271,32 @@ class CommunicationGenerator {
         // de handleWorkerMessage fait référence à l'instance de CommunicationGenerator.
     }
 
-    generateCommunication(total_communication) {
+    generateCommunication(total_communication, PredefinedBitrate = null, PredefinedDuration = null) {
         /** Description: This function generates a communication at a random interval
          * @param {number} total_communication The number of communications to generate
          * **/
+        i=0;
         while (total_communication > 0) {
             total_communication--;
             setTimeout(() => { // We wait for a random interval before generating the communication
-                let com = new Communication(); // Create a new communication
-                com.ovsfCode = OVSFtree.allocateOVSFCode(com.allocated_bitrate); // Allocate an OVSF code to the communication
-                com.print();
+                let com = null;
+                if (PredefinedBitrate !== null && PredefinedDuration !== null) {
+                    com = new Communication(PredefinedBitrate[i], PredefinedDuration[i]); 
+                } else {
+                    com = new Communication(); 
+                }
+                com.ovsfCode = OVSFtree.allocateOVSFCode(com.allocated_bitrate, i); // Allocate an OVSF code to the communication
+                //com.print();
                 if (com.ovsfCode === null) {
                     console.log("Communication " + com.ovsfCode + " not allocated");
                     this.displayRejectedCommunication(com); // Display the rejected communication in the UI
                 } else {
                     console.log("Communication " + com.ovsfCode + " allocated");
-                    this.communications.push(com); // Add the communication to the list of communications
+                    communications.push(com); // Add the communication to the list of communications
                     this.worker.postMessage(com); // Send a message to the worker to start the communication
                     this.displayCommunication(com); // Display the communication in the UI
                 }
-
+                i++;
                 //updates the data for d3.js to display the tree
                 d3Root = generateTreeData(OVSFtree.root);
                 d3Root.children.forEach(collapse);
@@ -212,6 +313,7 @@ class CommunicationGenerator {
         console.log('Communication ' + event.data.ovsfCode + ' ended...');
         console.log(event.data);
         OVSFtree.free(OVSFtree.root, event.data.ovsfCode);
+        communications = communications.filter(comm => comm.ovsfCode !== event.data.ovsfCode); // Remove the communication from the list of communications
 
         //updates the data for d3.js to display the tree
         d3Root = generateTreeData(OVSFtree.root);
