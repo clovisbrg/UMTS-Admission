@@ -19,8 +19,9 @@
 }
 
 body {
-  overflow: hidden;
+  overflow-x: hidden;
 }
+
 .tooltip {
   position: absolute;
   text-align: center;
@@ -38,8 +39,8 @@ body {
 
 #body {
   width: 960px;
-  height: 600px;
-  margin: 20px;
+  height: 400px;
+  margin: 0px;
   margin-top: 5px;
   border: 2px solid #333;
   border-radius: 8px;
@@ -50,7 +51,7 @@ body {
 .top-banner {
   background-color: #333;
   color: white;
-  padding: 20px 0;
+  padding: 15px 0;
 }
 
 .container {
@@ -90,11 +91,11 @@ body {
 
 /*---------------------Communication tile styling --------------------*/
 #communications-container {
-  width: 960px;
-  margin: 20px auto;
+  width: 860px;
+  margin: 0px auto;
   margin-top: 5px;
   padding: 10px;
-  border: 2px solid #333;
+  border: 2px solid #000000;
   border-radius: 8px;
   overflow-y: auto;
 }
@@ -103,8 +104,8 @@ body {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 5px;
+  margin-bottom: 5px;
   position: relative;
 }
 
@@ -122,8 +123,8 @@ body {
   opacity: 0.8;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 5px;
+  margin-bottom: 5px;
   position: relative;
 }
 
@@ -131,6 +132,6 @@ body {
 .grid-container {
   display: grid;
   grid-template-columns: auto auto; /* Adjust the columns as needed */
-  gap: 20px; /* Adjust the gap between elements */
+  gap: 5px; /* Adjust the gap between elements */
 }
 

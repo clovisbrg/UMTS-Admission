@@ -455,7 +455,7 @@ function generateTreeData(node) {
 }
 
 const width = 960;
-const height = 400;
+const height = 600;
 
 var i = 0,
     duration = 150,
