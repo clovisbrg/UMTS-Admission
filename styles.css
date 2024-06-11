@@ -90,8 +90,10 @@ body {
 
 
 /*---------------------Communication tile styling --------------------*/
-#communications-container {
+#communications-grid-container {
+  display: grid;
   width: 860px;
+  grid-template-columns: auto auto auto;
   margin: 0px auto;
   margin-top: 5px;
   padding: 10px;
@@ -126,6 +128,15 @@ body {
   padding: 5px;
   margin-bottom: 5px;
   position: relative;
+}
+
+.rejected_communication h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.rejected_communication p {
+  margin: 5px 0;
 }
 
 /* Grid layout */

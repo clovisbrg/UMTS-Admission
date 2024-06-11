@@ -324,7 +324,7 @@ class CommunicationGenerator {
     }
 
     displayCommunication(commData) {
-        const container = document.getElementById('communications-container');
+        const container = document.getElementById('communications-grid-container');
         const commElement = document.createElement('div');
         commElement.id = `comm-${commData.ovsfCode}`;
         commElement.className = 'communication';
@@ -362,7 +362,7 @@ class CommunicationGenerator {
     }
 
     displayRejectedCommunication(commData) {
-        const container = document.getElementById('communications-container');
+        const container = document.getElementById('communications-grid-container');
         const commElement = document.createElement('div');
         commElement.className = 'rejected_communication';
         commElement.innerHTML = `
@@ -382,10 +382,10 @@ class Communication {
     // Description: This class represents an entering communication waiting to be assigned an ovsf code
     constructor() {
         // Description: This constructor initializes the communication with random bitrate and size
-        //this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
-        this.bitrate = 256;
-        //this.size = Math.floor(Math.random() * 99) + 200;
-        this.size = 20000;
+        this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
+        //this.bitrate = 256;
+        this.size = Math.floor(Math.random() * 99) + 200;
+        //this.size = 20000;
         this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
         this.duration = this.size / this.bitrate;
         this.ovsfCode = null;
@@ -418,9 +418,15 @@ OVSFtree.root.treeLevel = 0;
 generator = new CommunicationGenerator();
 //OVSFtree.print();
 
-document.getElementById('playButton').addEventListener('click', function() {
-    //const generator = new CommunicationGenerator(OVSFtree);
-    generator.generateCommunication(10);
+document.getElementById('startButton').addEventListener('click', function() {
+    const numCommunications = document.getElementById('numCommunications').value;
+    const number = parseInt(numCommunications, 10);
+
+    if (!isNaN(number) && number > 0) {
+        generator.generateCommunication(number);
+    } else {
+        alert('Please enter a valid number of communications.');
+    }
 });
 
 //DISPLAY THE TREE USING D3.js
