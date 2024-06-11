@@ -301,6 +301,7 @@ class CommunicationGenerator {
                 d3Root = generateTreeData(OVSFtree.root);
                 d3Root.children.forEach(collapse);
                 update(d3Root);
+                //developTree(d3Root, 2);
 
             },Math.floor(Math.random() * 6000) + 3000); // Random interval between 3 and 5 seconds
         }
@@ -319,6 +320,7 @@ class CommunicationGenerator {
         d3Root = generateTreeData(OVSFtree.root);
         d3Root.children.forEach(collapse);
         update(d3Root);
+        //developTree(d3Root, 2);
 
         this.removeCommunication(event.data.ovsfCode);
     }
@@ -330,26 +332,25 @@ class CommunicationGenerator {
         commElement.className = 'communication';
         commElement.innerHTML = `
             <h3>Communication Code: ${commData.ovsfCode}</h3>
-            <p>Duration: ${commData.duration}s</p>
+            <p>Duration: ${commData.duration.toFixed(1)}s</p>
             <p>Bitrate: ${commData.bitrate} kbps</p>
             <p>Size: ${commData.size} kb</p>
-            <p>Time Left: <span id="timer-${commData.ovsfCode}">${commData.duration}.000</span>s</p>
+            <p>Time Left: <span id="timer-${commData.ovsfCode}">${commData.duration.toFixed(1)}</span>s</p>
         `;
         container.appendChild(commElement);
-
+    
         // Update the timer over time
         const timerElement = document.getElementById(`timer-${commData.ovsfCode}`);
         let endTime = Date.now() + commData.duration * 1000;
-
+    
         const interval = setInterval(() => {
             let timeLeft = endTime - Date.now();
             if (timeLeft > 0) {
-                let seconds = Math.floor(timeLeft / 1000);
-                let milliseconds = timeLeft % 1000;
-                timerElement.textContent = `${seconds}.${milliseconds.toString().padStart(3, '0')}`;
+                let seconds = (timeLeft / 1000).toFixed(1);
+                timerElement.textContent = seconds;
             } else {
                 clearInterval(interval);
-                timerElement.textContent = '0.000';
+                timerElement.textContent = '0.0';
             }
         }, 10);
     }
@@ -494,6 +495,18 @@ function collapse(d) {
 
 d3Root.children.forEach(collapse);
 update(d3Root);
+developTree(d3Root, 2);
+
+function developTree(node, levelNeeded) {
+    if (levelNeeded === 0) {
+        return;
+    }
+    var currentNode = node;
+    click(currentNode.children[0]);
+    developTree(currentNode.children[0], levelNeeded-1);
+    click(currentNode.children[1]);
+    developTree(currentNode.children[1], levelNeeded-1);
+}
 
 d3.select("#body").style("height", "800px");
 
