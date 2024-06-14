@@ -1,4 +1,4 @@
-const BITRATES_ALLOCATIONS = [128,256];//[2, 4, 8, 16, 32, 64, 128, 256];
+const BITRATES_ALLOCATIONS = [2, 4, 8, 16, 32, 64, 128, 256];
 const True = Boolean(true);
 const False = Boolean(false);
 
@@ -16,8 +16,7 @@ function opposite(num) {
 }
 
 class Node {
-    /**
-     * Description: This class represents a node in a binary tree
+    /** Description: This class represents a node in a binary tree
      * @param {string} code The code of the node
      * @param {number} rate The rate of the node
      * @param {number} treeLevel The level of the node in the tree
@@ -72,34 +71,11 @@ class BinaryTree {
         }
     }
 
-    insert(code) {
-        // Create a node, assign his code, and insert this node as the root if there is not root, call the insertNode function otherwise
-        const newNode = new Node(code);
-
-        if (this.root === null) {
-            this.root = newNode;
-        } else {
-            this.insertNode(this.root, newNode);
-        }
-    }
-
-    insertNode(node, newNode) { // ----- N'est pas utilisée
-        /** Description : Insert a node in the tree
-         * @param {Node} node The node to insert the new node in
-         * @param {Node} newNode The new node to insert in the tree
-         * @returns {void}
-         */
-        if (node.left === null) { // If the left child of the current node is empty
-            node.left = newNode;
-        }
-        else if (node.right === null) {
-            node.right = newNode;
-        } else {
-            this.insertNode(node.right, newNode);
-        }
-    }
-
     isAllDescendantsFree(node) {
+        /** Description: This function checks if all the descendants of a node are free
+         * @param {Node} node The node to check its descendants
+         * @returns {boolean} True if all the descendants are free, False otherwise
+         * */
         if (!node) return true;
         if (node.isAllocated) return false;
         return this.isAllDescendantsFree(node.left) && this.isAllDescendantsFree(node.right);
@@ -115,7 +91,14 @@ class BinaryTree {
     }
  
     findNodeForPreemptiveMove(node, rate, id, is_ancestor_free = True) {
-        // Description : Look for a node with a specific rate that have only ONE child allocated       
+        /** Description : Get a node with a specific rate that have only ONE child allocated, 
+         *               then allocate the code of the child to another node
+         * @param {Node} node The node to start the search from
+         * @param {number} rate The rate of the communication
+         * @param {number} id The id of the communication
+         * @param {boolean} is_ancestor_free The ancestor of the node is free
+         * @returns {Node} The node with the specific rate
+         * */
         if (node !== null) {
             console.log(node.treeLevel + " | id : " + id + " | Looking for a node with rate: " + rate + " || Current node : (" + node.rate + ") | code : " + node.code +
             " | ancestor_free : " + is_ancestor_free  + " | isAllocated : " + node.isAllocated);
@@ -134,7 +117,7 @@ class BinaryTree {
                         }
                     }
                 }
-                if (this.isAllDescendantsFree(node)) {
+                if (this.isAllDescendantsFree(node.left) || this.isAllDescendantsFree(node.right)) { // Now that the child is reallocated, we do a last verification
                     console.log("Node found for preemptive move");
                     return node;
                 } else {
@@ -150,7 +133,13 @@ class BinaryTree {
     }
 
     findNode(node, rate, id, is_ancestor_free = True) {
-        // Description : Look for an AVAILABLE node with a specific rate        
+        /** Description : Look for an AVAILABLE node with a specific rate    
+         * @param {Node} node The node to start the search from
+         * @param {number} rate The rate of the communication
+         * @param {number} id The id of the communication
+         * @param {boolean} is_ancestor_free The ancestor of the node is free
+         * @returns {Node} The node with the specific rate
+         * */    
         if (node !== null) {
             if (node.code != "0" && node.code != "00" && node.code != "01") {
                 console.log(`${node.treeLevel} | id: ${id} | Looking for a node with rate: ${rate} || Current node: (${node.rate}) | code: ${node.code} | ancestor_free: ${is_ancestor_free} | isAllocated: ${node.isAllocated}`);
@@ -160,7 +149,7 @@ class BinaryTree {
                     console.log("node found");
                     return node;
                 } else {
-                    console.log("A node was found but not all descendants are free, a premptive move COULD BE needed...");
+                    console.log("A node was found but not all descendants are free, a preemptive move COULD BE needed...");
                     return False;
                 }
             } else if (node.rate > rate) {
@@ -173,11 +162,15 @@ class BinaryTree {
     }
 
     free(treeRoot, code) {
-        // Description : Look for the node with a specific code and set it as free
+        /** Description : Look for the node with a specific code and set it as free
+         * @param {Node} treeRoot The root of the tree
+         * @param {string} code The code of the node to free
+         * @returns {void}
+         * */
         let targetNode = this.findNodeByCode(treeRoot, code);
         if (targetNode) {
             targetNode.isAllocated = false;
-            console.log(`OVSF code ${targetNode.code} freed: ${targetNode.isAllocated}`);
+            console.log(`OVSF code ${targetNode.code} freed, isAllocated : ${targetNode.isAllocated}`);
         } else {
             console.log("No OVSF code found to be freed");
         }
@@ -195,7 +188,11 @@ class BinaryTree {
     }
 
     reallocate(node, new_allocation_node) {
-        // Description : Reallocate a node
+        /** Description : Reallocate a code to a new node
+         * @param {Node} node The node to reallocate
+         * @param {Node} new_allocation_node The new node to allocate the code to
+         * @returns {string} The new code allocated
+         **/
         console.log("REALLOCATION | Freeing this code " + node.code);
         this.free(this.root, node.code);
         new_allocation_node.isAllocated = True;
@@ -231,20 +228,7 @@ class BinaryTree {
     }
 }
 
-function OVSFTreeBuilder() {
-    // Description : Build the OVSF tree and provoke collisions to test the preemptive procedure
-    tree = new BinaryTree("0", 2048, 4);
-    tree.isAllocated = true;
-    tree.root.treeLevel = 0;
-    tree.print();
-    // Predefined bitrates and durations to provoke collisions and preemptive moves
-    let PredefinedBitrate = [256, 256, 256, 256, 256, 256, 128, 128, 128, 256];
-    let PredefinedDuration = [15, 15, 15, 15, 15, 15, 10, 1, 10, 5];
-
-    const generator = new CommunicationGenerator(tree);
-    generator.generateCommunication(10, PredefinedBitrate, PredefinedDuration);
-}
-
+/*------------List of communications------------*/
 let communications = [];
 
 function getCommunicationByCode(code) {
@@ -255,14 +239,13 @@ function getCommunicationByCode(code) {
     return communications.find(comm => comm.ovsfCode === code);
 }
 
+/*------------Generation of communications------------*/
 class CommunicationGenerator {
     /** Description: This class generates communications
      * @returns {CommunicationGenerator} A communication generator
      **/
     constructor() {
-        /** Description: This constructor initializes the communication generator
-         * worker : The worker to handle the communications
-         **/
+        // The worker to handle the communications
         this.worker = new Worker('communication.js');
         // Add an event listener to listen for messages from the worker
         // We attach the handleWorkerMessage function as a callback to the message event
@@ -275,7 +258,7 @@ class CommunicationGenerator {
         /** Description: This function generates a communication at a random interval
          * @param {number} total_communication The number of communications to generate
          * **/
-        i=0;
+        let i=0;
         while (total_communication > 0) {
             total_communication--;
             setTimeout(() => { // We wait for a random interval before generating the communication
@@ -310,11 +293,13 @@ class CommunicationGenerator {
     handleWorkerMessage(event) {
         /** Description: This function handles messages received from the worker
          * @param {Event} event The event received from the worker
-         **/
+         * **/
         console.log('Communication ' + event.data.ovsfCode + ' ended...');
         console.log(event.data);
         OVSFtree.free(OVSFtree.root, event.data.ovsfCode);
-        communications = communications.filter(comm => comm.ovsfCode !== event.data.ovsfCode); // Remove the communication from the list of communications
+
+        // Remove the communication from the list of communications
+        communications = communications.filter(comm => comm.ovsfCode !== event.data.ovsfCode);
 
         //updates the data for d3.js to display the tree
         d3Root = generateTreeData(OVSFtree.root);
@@ -326,6 +311,9 @@ class CommunicationGenerator {
     }
 
     displayCommunication(commData) {
+        /** Description: This function displays a communication in the UI
+         * @param {Communication} commData The communication to display
+         * **/
         const container = document.getElementById('communications-grid-container');
         const commElement = document.createElement('div');
         commElement.id = `comm-${commData.ovsfCode}`;
@@ -356,6 +344,9 @@ class CommunicationGenerator {
     }
 
     removeCommunication(ovsfCode) {
+        /** Description: This function removes a communication from the UI
+         * @param {string} ovsfCode The code of the communication to remove
+         * **/
         const commElement = document.getElementById(`comm-${ovsfCode}`);
         if (commElement) {
             commElement.remove();
@@ -363,6 +354,9 @@ class CommunicationGenerator {
     }
 
     displayRejectedCommunication(commData) {
+        /** Description: This function displays a rejected communication in the UI
+         * @param {Communication} commData The communication to display
+         * **/
         const container = document.getElementById('communications-grid-container');
         const commElement = document.createElement('div');
         commElement.className = 'rejected_communication';
@@ -380,15 +374,29 @@ class CommunicationGenerator {
 }
 
 class Communication {
-    // Description: This class represents an entering communication waiting to be assigned an ovsf code
-    constructor() {
+    /** Description: This class represents an entering communication waiting to be assigned an ovsf code
+     * @param {number} PredefinedBitrate The predefined bitrate of the communication
+     * @param {number} PredefinedDuration The predefined duration of the communication
+     * @returns {Communication} A communication
+     * **/
+    constructor(PredefinedBitrate = null, PredefinedDuration = null) {
         // Description: This constructor initializes the communication with random bitrate and size
+        if (PredefinedBitrate !== null && PredefinedDuration !== null) {
+            this.bitrate = PredefinedBitrate;
+            this.size = Math.floor(Math.random() * 99) + 200;
+            this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
+            this.duration = PredefinedDuration;
+        } else {
+        this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
         this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
         //this.bitrate = 256;
-        this.size = Math.floor(Math.random() * 99) + 200;
-        //this.size = 20000;
-        this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
-        this.duration = this.size / this.bitrate;
+            this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
+        //this.bitrate = 256;
+            this.size = Math.floor(Math.random() * 99) + 200;
+            this.size = Math.floor(Math.random() * 99) + 200;
+            this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
+            this.duration = this.size / this.bitrate;
+        }
         this.ovsfCode = null;
     }
 
@@ -402,6 +410,7 @@ class Communication {
             }
         }
     }
+
     print() {
         // Description: This function prints the communication's attributes
         console.log("Bitrate: " + this.bitrate + " kbps");
@@ -412,13 +421,31 @@ class Communication {
     }
 }
 
+function OVSFTreeBuilder() {
+    // Description : Build the OVSF tree and provoke collisions to test the preemptive procedure
+    OVSFtree = new BinaryTree("0", 2048, 4);
+    OVSFtree.isAllocated = true;
+    OVSFtree.root.treeLevel = 0;
+    tree = OVSFtree;
+    tree.print();
+
+    // Predefined bitrates and durations to provoke collisions and preemptive moves
+    let PredefinedBitrate = [256, 256, 256, 256, 256, 256, 128, 128, 128, 256];
+    let PredefinedDuration = [15, 15, 15, 15, 15, 15, 1, 10, 10, 5];
+
+    // const generator = new CommunicationGenerator();
+    generator.generateCommunication(10, PredefinedBitrate, PredefinedDuration);
+}
+
+/*------------Creation of the BinaryTree------------*/
 var OVSFtree = new BinaryTree("0", 2048, 10);
 var d3Root = generateTreeData(OVSFtree.root);
 OVSFtree.isAllocated = true;
 OVSFtree.root.treeLevel = 0;
 generator = new CommunicationGenerator();
-//OVSFtree.print();
+OVSFtree.print();
 
+/*------------Graphical interface functions------------*/
 document.getElementById('startButton').addEventListener('click', function() {
     const numCommunications = document.getElementById('numCommunications').value;
     const number = parseInt(numCommunications, 10);

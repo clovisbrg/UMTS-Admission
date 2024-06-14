@@ -9,3 +9,5 @@ The project uses Web Workers that require a server environment to function prope
 
 Once the server is running, you can access your HTML file containing the JavaScript code that uses Web Workers by navigating to http://localhost:8000/index.html in your web browser. This allows the Web Workers to be executed within the server environment, enabling parallel processing.
 
+## Pre-emptive procedure
+Launch ````OVSFTreeBuilder()``` in the browser console.
