@@ -254,14 +254,14 @@ class CommunicationGenerator {
         // de handleWorkerMessage fait référence à l'instance de CommunicationGenerator.
     }
 
-    generateCommunication(total_communication, PredefinedBitrate = null, PredefinedDuration = null) {
+    async generateCommunication(total_communication, PredefinedBitrate = null, PredefinedDuration = null) {
         /** Description: This function generates a communication at a random interval
          * @param {number} total_communication The number of communications to generate
          * **/
         let i=0;
         while (total_communication > 0) {
             total_communication--;
-            setTimeout(() => { // We wait for a random interval before generating the communication
+            await sleep(Math.floor(Math.random() * 4000) + 1000); // Random interval between 3 and 5 seconds
                 let com = null;
                 if (PredefinedBitrate !== null && PredefinedDuration !== null) {
                     com = new Communication(PredefinedBitrate[i], PredefinedDuration[i]); 
@@ -284,9 +284,7 @@ class CommunicationGenerator {
                 d3Root = generateTreeData(OVSFtree.root);
                 d3Root.children.forEach(collapse);
                 update(d3Root);
-                //developTree(d3Root, 2);
-
-            },Math.floor(Math.random() * 6000) + 3000); // Random interval between 3 and 5 seconds
+                developTree(d3Root, 4);
         }
     }
 
@@ -305,7 +303,7 @@ class CommunicationGenerator {
         d3Root = generateTreeData(OVSFtree.root);
         d3Root.children.forEach(collapse);
         update(d3Root);
-        //developTree(d3Root, 2);
+        developTree(d3Root, 4);
 
         this.removeCommunication(event.data.ovsfCode);
     }
@@ -319,7 +317,8 @@ class CommunicationGenerator {
         commElement.id = `comm-${commData.ovsfCode}`;
         commElement.className = 'communication';
         commElement.innerHTML = `
-            <h3>Communication Code: ${commData.ovsfCode}</h3>
+            <h3>Communication Code:</h3>
+            <p>${commData.ovsfCode}</p>
             <p>Duration: ${commData.duration.toFixed(1)}s</p>
             <p>Bitrate: ${commData.bitrate} kbps</p>
             <p>Size: ${commData.size} kb</p>
@@ -387,13 +386,9 @@ class Communication {
             this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
             this.duration = PredefinedDuration;
         } else {
-        this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
-        this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
-        //this.bitrate = 256;
-            this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
-        //this.bitrate = 256;
-            this.size = Math.floor(Math.random() * 99) + 200;
-            this.size = Math.floor(Math.random() * 99) + 200;
+            //this.bitrate = Math.floor(Math.random() * 255) + 2; // Random bitrate between 2 and 256 kbps
+            this.bitrate = 256;
+            this.size = Math.floor(Math.random() * 999) + 2000;
             this.allocated_bitrate = this.allocate_bitrate(this.bitrate);
             this.duration = this.size / this.bitrate;
         }
@@ -435,6 +430,10 @@ function OVSFTreeBuilder() {
 
     // const generator = new CommunicationGenerator();
     generator.generateCommunication(10, PredefinedBitrate, PredefinedDuration);
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /*------------Creation of the BinaryTree------------*/
@@ -493,10 +492,10 @@ const height = 600;
 
 var i = 0,
     duration = 150,
-    rectW = 60,
-    rectH = 30;
+    rectW = 30,
+    rectH = 15;
 
-var tree = d3.layout.tree().nodeSize([70, 40]);
+var tree = d3.layout.tree().nodeSize([30, 15]);
 var diagonal = d3.svg.diagonal()
     .projection(function (d) {
     return [d.x + rectW / 2, d.y + rectH / 2];
@@ -522,7 +521,7 @@ function collapse(d) {
 
 d3Root.children.forEach(collapse);
 update(d3Root);
-developTree(d3Root, 2);
+developTree(d3Root, 3);
 
 function developTree(node, levelNeeded) {
     if (levelNeeded === 0) {
