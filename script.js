@@ -284,7 +284,7 @@ class CommunicationGenerator {
                 d3Root = generateTreeData(OVSFtree.root);
                 d3Root.children.forEach(collapse);
                 update(d3Root);
-                developTree(d3Root, 4);
+                developTree(d3Root, 3);
         }
     }
 
@@ -303,7 +303,7 @@ class CommunicationGenerator {
         d3Root = generateTreeData(OVSFtree.root);
         d3Root.children.forEach(collapse);
         update(d3Root);
-        developTree(d3Root, 4);
+        developTree(d3Root, 3);
 
         this.removeCommunication(event.data.ovsfCode);
     }
