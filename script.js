@@ -261,7 +261,7 @@ class CommunicationGenerator {
         let i=0;
         while (total_communication > 0) {
             total_communication--;
-            await sleep(Math.floor(Math.random() * 4000) + 1000); // Random interval between 3 and 5 seconds
+            await sleep(Math.floor(Math.random() * 1000) + 100); // Random interval between 3 and 5 seconds
                 let com = null;
                 if (PredefinedBitrate !== null && PredefinedDuration !== null) {
                     com = new Communication(PredefinedBitrate[i], PredefinedDuration[i]); 
